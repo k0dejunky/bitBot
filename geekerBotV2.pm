@@ -253,7 +253,7 @@ sub alt_findProfitAndBuy {
     print "\n|-- ".localtime()." \n";
     print "|-- ALTERNATE findProfitAndBuy $coin \n";
     #MODIFY bidPrice by +1 satoshi for our calc (PriceIsRight Move)
-    my $bidPrice = $self->deci($self->bidCoinPrice($coin,$self->deci($self->{coinMetricsTimeRange}/2) + 0.00000001));
+    my $bidPrice = $self->deci($self->lowestCoinPrice($coin,$self->deci($self->{coinMetricsTimeRange}/2) + 0.00000001));
     my $highPrice = $self->highestCoinPrice($coin,$self->{coinMetricsTimeRange}/2);
     #REPLACE highPrice with AskPrice - 1 satoshi
     my $askPrice = $self->deci($self->askCoinPrice($coin,1) );
