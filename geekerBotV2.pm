@@ -1107,16 +1107,19 @@ sub fetchBalances {
             my $result = $json->{result};
             foreach my $a(@$result) {
                 my $reserved = $self->deci($a->{Balance} - $a->{Available});
-                print "|-- $a->{Currency} - Balance: ".$self->deci($a->{Balance})." - Available: ".$self->deci($a->{Available})." - Pending: ".$self->deci($a->{Pending})." - Reserved: $reserved\n";
+		if($a->{Currency} eq "BTC"){
+	                print "|-- $a->{Currency} - Balance: ".$self->deci($a->{Balance})." - Available: ".$self->deci($a->{Available})." - Pending: ".$self->deci($a->{Pending})." - Reserved: ".$self->deci($reserved+$self{totalPayout})."\n";
+        	        #$self->{availableBtc} = $a->{Available};
+                	if(($a->{Available}-$self{totalPayout}) >= 0.00200000){
+                        	$self->{availableBtc} = 0.00200000;
+	                }else{
+        	                $self->{availableBtc} = $a->{Available}-$self{totalPayout};
+                	}
+
+		}else{
+                        print "|-- $a->{Currency} - Balance: ".$self->deci($a->{Balance})." - Available: ".$self->deci($a->{Available})." - Pending: ".$self->deci($a->{Pending})." - Reserved: $reserved\n";
+		}
                 $self->updateBalance($a->{Currency},$a->{Balance},$a->{Pending},$a->{Available});
-                if ( $a->{Currency} eq 'BTC' ) {
-                    #$self->{availableBtc} = $a->{Available};
-		    if(($a->{Available}-$self{totalPayout}) >= 0.00200000){
-			$self->{availableBtc} = 0.00200000;
-		    }else{
-			$self->{availableBtc} = $a->{Available}-$self{totalPayout};
-		    }
-                }
             }
         }    
     } else {
