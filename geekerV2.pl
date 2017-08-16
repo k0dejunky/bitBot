@@ -19,4 +19,3 @@ while (1) {
     $runBot->run();
     select(undef,undef,undef,10); # 10s delay
 }
-

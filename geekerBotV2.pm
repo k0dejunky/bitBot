@@ -31,12 +31,14 @@ sub new
         btcPrice => 0,        
         availableBtc => 0,        
         delayBuysCyclesLeft => 0,
-        coinMetricsTimeRange => 6,
+        coinMetricsTimeRange => 2,
         investPercent => 100,
         retrySellMax => 2,
         retrySells => 0,
         delayBuyCyclesRemaining => 0,
-        delayBuyUntilMoreThan => '0.00062500'
+        delayBuyUntilMoreThan => '0.00062500',
+	reservePercentage => 10,
+	totalPayout => 0
     };
     bless $self, $class;
     print color('bold yellow');
@@ -54,6 +56,8 @@ sub run {
         #print Dumper($self);die();        
     }
     $self->fetchBalances(); # Once At Beginning and...
+    $self->getTotalPayout(); #once At Beginning
+	print "|--- Total Reserved Bitcoin: " .$self{totalPayout}."\n";
     $self->btcPriceCheck();
     $self->priceCheck();
     select(undef,undef,undef,1); # pause half second
@@ -220,11 +224,11 @@ sub findProfitAndBuy {
     # Find The Preciouseseses
     my $sellProfit = ($totalSellPrice - $totalBuyPrice);
     my $profitAfterCommission = (($totalSellPrice - $totalBuyPrice) - $totalCommission);
+
     print "|-- IF Buy ".$self->deci($howMany)." $coin at ".$self->deci($bidPrice)." For ".$self->deci($totalBuyPrice)." BTC and then\n";
     print "|-- IF Sell ".$self->deci($howMany)." $coin at ".$self->deci($highPrice)." For ".$self->deci($totalSellPrice)." BTC \n";
     print "|-- Profit Before Commission will be: ".$self->deci($sellProfit)." BTC.\n";
     print "|-- Profit After Commission will be: ".$self->deci($profitAfterCommission)." BTC.\n";
-    
     if ( $profitAfterCommission >= 0.00000100 ) {
         print "****** YES! (Actual Profit is Over 100 Satoshis) ******\n";
         if ( $howMany > 0 && $self->{availableBtc} >= $self->{delayBuyUntilMoreThan} && ( $self->{delayBuyCyclesRemaining} < 1 ) ) {
@@ -253,8 +257,8 @@ sub alt_findProfitAndBuy {
     print "\n|-- ".localtime()." \n";
     print "|-- ALTERNATE findProfitAndBuy $coin \n";
     #MODIFY bidPrice by +1 satoshi for our calc (PriceIsRight Move)
-    my $bidPrice = $self->deci($self->lowestCoinPrice($coin,$self->deci($self->{coinMetricsTimeRange}/2) + 0.00000001));
-    my $highPrice = $self->highestCoinPrice($coin,$self->{coinMetricsTimeRange}/2);
+    my $bidPrice = $self->deci($self->lowestCoinPrice($coin,$self->deci($self->{coinMetricsTimeRange})));
+    my $highPrice = $self->highestCoinPrice($coin,$self->{coinMetricsTimeRange});
     #REPLACE highPrice with AskPrice - 1 satoshi
     my $askPrice = $self->deci($self->askCoinPrice($coin,1) );
     my $howMany = $self->howManyAfford($coin,$bidPrice);
@@ -511,6 +515,29 @@ sub cancelOrder {
 ######################
 # Auto Trade Functions
 ######################
+sub getTotalPayout{
+	my ($self)=@_;
+	my $db = $self->getDb();
+	my $sql = "SELECT total from payout order by total DESC";
+	my $sth = $db->prepare($sql);
+	$sth->execute();
+	my $row  = $sth->fetchrow_hashref();
+	#print $$row{total};
+	$self{totalPayout} = $$row{total};
+	print "Payout : ".$self{totalPayout}."\n";
+	$sth->finish();
+	$db->disconnect();
+}
+sub setPayout {
+	my ($self, $payout) = @_;
+	my $db = $self->getDb();
+	$self{totalPayout} = $self->deci($self{totalPayout} + $payout);
+	print "Total: ".$self{totalPayout}."\n";
+	print "|--- Total Payout: ".$self{totalPayout}."\n";
+	$db->do("insert into payout (payout, total) values ($payout, $self{totalPayout})");
+	#$sth->finish();
+	$db->disconnect();
+}
 sub createAutoTrade {
     my ($self,$coin,$uuid,$type,$perUnitBuyPrice,$perUnitSellPrice,$amount,$totalBuyPrice,$totalSellPrice,$buyCommission,$sellCommission) = @_;
     my $profitBefore = $self->deci($totalSellPrice - $totalBuyPrice);
@@ -568,6 +595,13 @@ sub autoResolveAutoTrades {
                     print "|--- REMAINING: " . $self->deci($row->{remaining}) . " (SHOULD ALWAYS BE ZERO)\n";
                     print "|--- Profit After Commission: ".$self->deci((($row->{totalSellPrice} - ($row->{totalSellPrice} * 0.0025)) - ($row->{totalBuyPrice} - * 0.0025) ))."\n";
                     print color('reset');
+		    print color('bold green');
+		   	my $tmp = $self->deci((($row->{totalSellPrice} - ($row->{totalSellPrice} * 0.0025)) - ($row->{totalBuyPrice} - * 0.0025) ));
+			my $reserved = $self->deci($tmp * .1);
+			$self->setPayout($reserved);
+		    print "|--- Reserving ".$self->deci($reserved)." BTC\n"; 
+		    print "|--- Profit after reserved BTC: ".$self->deci($tmp-$reserved)."\n";
+		    print color('reset');
                     $self->{delayBuyCyclesRemaining} = 80; #roughly 1-90 minutes (OR MUCH LONGER DEPENDING ON delays For Cancels,buys,sells,retries,etc AND THATS FINE!)
                     # mark Sold
                     my $uth = $db->do("UPDATE autoTrades SET resolved=1 WHERE uuid=\'$row->{uuid}\'");
@@ -1075,10 +1109,10 @@ sub fetchBalances {
                 $self->updateBalance($a->{Currency},$a->{Balance},$a->{Pending},$a->{Available});
                 if ( $a->{Currency} eq 'BTC' ) {
                     #$self->{availableBtc} = $a->{Available};
-		    if($a->{Available} >= 0.00170000){
-			$self->{availableBtc} = 0.00170000;
+		    if(($a->{Available}-$self{totalPayout}) >= 0.00200000){
+			$self->{availableBtc} = 0.00200000;
 		    }else{
-			$self->{availableBtc} = $a->{Available};
+			$self->{availableBtc} = $a->{Available}-$self{totalPayout};
 		    }
                 }
             }
@@ -1184,7 +1218,7 @@ sub insertBtcPriceHistory {
     my ($self,$price) = @_;
     my $db = $self->getDb();
     #$price =~ s/,//;
-    my $uth = $db->do("INSERT INTO btcPriceHistory (price) VALUES ($price)");
+    #my $uth = $db->do("INSERT INTO btcPriceHistory (price) VALUES ($price)");
     $db->disconnect();
 }
 
