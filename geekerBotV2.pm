@@ -38,7 +38,8 @@ sub new
         delayBuyCyclesRemaining => 0,
         delayBuyUntilMoreThan => '0.00062500',
 	reservePercentage => 10,
-	totalPayout => 0
+	totalPayout => 0,
+	
     };
     bless $self, $class;
     print color('bold yellow');
@@ -581,7 +582,8 @@ sub autoResolveAutoTrades {
                     #print Dumper($detail);
                     $row->{amount} = $detail->{Quantity};
                     $row->{buyCommission} = $detail->{CommissionPaid};                    
-                    $self->placeSellOrder($row->{coin},$self->deci($row->{amount}),$self->deci($row->{perUnitSellPrice}),$self->deci($row->{perUnitBuyPrice}),$self->deci($row->{buyCommission}),$self->deci($row->{sellCommission}) );                
+                    $self->placeSellOrder($row->{coin},$self->deci($row->{amount}),$self->deci($row->{perUnitSellPrice}),$self->deci($row->{perUnitBuyPrice}),$self->deci($row->{buyCommission}),$self->deci($row->{sellCommission}) );
+                    $self->{delayBuyCyclesRemaining} = 10; #roughly 1-90 minutes (OR MUCH LONGER DEPENDING ON delays For Cancels,buys,sells,retries,etc AND THATS FINE!) 
                 } else { print "|--- PARTIAL $row->{type} Remaining: $self->deci($row->{remaining}) $row->{coin} $row->{uuid}\n"; }
             } elsif ( $row->{type} eq 'LIMIT_SELL' ) {    
                 if ( $self->deci($row->{remaining}) < 0.00000001 ) {
