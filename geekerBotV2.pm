@@ -583,7 +583,7 @@ sub autoResolveAutoTrades {
                     $row->{amount} = $detail->{Quantity};
                     $row->{buyCommission} = $detail->{CommissionPaid};                    
                     $self->placeSellOrder($row->{coin},$self->deci($row->{amount}),$self->deci($row->{perUnitSellPrice}),$self->deci($row->{perUnitBuyPrice}),$self->deci($row->{buyCommission}),$self->deci($row->{sellCommission}) );
-                    $self->{delayBuyCyclesRemaining} = 10; #roughly 1-90 minutes (OR MUCH LONGER DEPENDING ON delays For Cancels,buys,sells,retries,etc AND THATS FINE!) 
+	            $self->{delayBuyCyclesRemaining} = 10; #roughly 1-90 minutes (OR MUCH LONGER DEPENDING ON delays For Cancels,buys,sells,retries,etc AND THATS FINE!) 
                 } else { print "|--- PARTIAL $row->{type} Remaining: $self->deci($row->{remaining}) $row->{coin} $row->{uuid}\n"; }
             } elsif ( $row->{type} eq 'LIMIT_SELL' ) {    
                 if ( $self->deci($row->{remaining}) < 0.00000001 ) {
@@ -604,7 +604,9 @@ sub autoResolveAutoTrades {
 		    print "|--- Reserving ".$self->deci($reserved)." BTC\n"; 
 		    print "|--- Profit after reserved BTC: ".$self->deci($tmp-$reserved)."\n";
 		    print color('reset');
-                    $self->{delayBuyCyclesRemaining} = 80; #roughly 1-90 minutes (OR MUCH LONGER DEPENDING ON delays For Cancels,buys,sells,retries,etc AND THATS FINE!)
+		    if($self->{delayBuyCyclesRemaining} == 0){
+	                    $self->{delayBuyCyclesRemaining} = 80; #roughly 1-90 minutes (OR MUCH LONGER DEPENDING ON delays For Cancels,buys,sells,retries,etc AND THATS FINE!)
+		    }
                     # mark Sold
                     my $uth = $db->do("UPDATE autoTrades SET resolved=1 WHERE uuid=\'$row->{uuid}\'");
 
