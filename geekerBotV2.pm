@@ -37,7 +37,7 @@ sub new
         retrySells => 0,
         delayBuyCyclesRemaining => 0,
         delayBuyUntilMoreThan => '0.00062500',
-	reservePercentage => 10,
+	payoutPercentage => 0.10,
 	totalPayout => 0,
 	
     };
@@ -599,7 +599,7 @@ sub autoResolveAutoTrades {
                     print color('reset');
 		    print color('bold green');
 		   	my $tmp = $self->deci((($row->{totalSellPrice} - ($row->{totalSellPrice} * 0.0025)) - ($row->{totalBuyPrice} - * 0.0025) ));
-			my $reserved = $self->deci($tmp * .1);
+			my $reserved = $self->deci($tmp * $self{payoutPercentage});
 			$self->setPayout($reserved);
 		    print "|--- Reserving ".$self->deci($reserved)." BTC\n"; 
 		    print "|--- Profit after reserved BTC: ".$self->deci($tmp-$reserved)."\n";
