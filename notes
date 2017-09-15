@@ -1,0 +1,1 @@
+alter sync process - if the last price is higher than current sell price cancel order and recreate at new higher sell price. (should be an imediate sale). 
