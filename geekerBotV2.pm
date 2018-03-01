@@ -12,7 +12,12 @@ use Data::Dumper;
 use Digest::SHA qw(hmac_sha512_hex);
 use LWP::UserAgent;  
 use JSON;
-use Term::ANSIColor;
+print "Running in: $^O\n";
+if ($^O =~ /^Win/i)
+{ use Win32::Console::ANSI} #for windows }
+else
+{ use Term::ANSIColor;} #for linux
+
     
 sub new
 {
