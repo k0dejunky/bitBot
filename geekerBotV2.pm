@@ -9,7 +9,7 @@
 package geekerBotV2;
 use DBI;
 use Data::Dumper;
-use Digest::SHA qw(hmac_sha256_hex);
+use Digest::SHA qw(hmac_sha512_hex);
 use LWP::UserAgent;  
 use JSON;
 use Term::ANSIColor;
