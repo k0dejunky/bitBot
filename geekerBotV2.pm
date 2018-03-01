@@ -170,6 +170,7 @@ sub initDbTables {
     if ( $self->doesTableExist("accounts") == 0 ) {
         print "|-- Table 'accounts' Does Not Exist!\n";
         $self->createAccountsDbTable();
+	$self->createPayoutDbTable(); #amount not to be traded
         die("You MUST insert your account(api details,etc) MANUALLY within Database\n");
     }
     if ( $self->doesTableExist("currencies") == 0 ) {
@@ -1539,6 +1540,18 @@ sub createAltCoinPriceHistoryDbTable {
     my $sth = $db->do("CREATE TABLE altCoinPriceHistory (id int PRIMARY KEY AUTO_INCREMENT,
     date TIMESTAMP default NOW(),price DECIMAL(16,8) default 0, coin VARCHAR(24), bid DECIMAL(16,8) default 0,ask DECIMAL(16,8) default 0)") or die("|--- Couldn't DO statement: " . $db->errstr . "\n");
     print "|-- Alt Coin Price History Table Created!\n";
+    $db->disconnect();
+}
+
+sub createPayoutDbTable
+{
+    #insert into payout (payout, total) values ($payout, $self{totalPayout})"
+    my ($self) =shift;
+    my $db = $self->getDb();
+
+    my $sth = $db->do("CREATE TABLE payout ( payout DECIMAL(16,8), total DECIMAL(16,8))");
+
+    print "|-- Payout Db Table Table Created!\n";
     $db->disconnect();
 }
 
