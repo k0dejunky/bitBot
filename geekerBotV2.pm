@@ -1433,7 +1433,8 @@ sub getApiSecret {
 sub getApiSig {
     my ($self,$uri,$nonce) = @_;
     my $secret = $self->getApiSecret();
-    my $sig = `php ./sign.php \"$uri\" \"$secret\" \"$nonce\"`; #"
+    #my $sig = `php ./sign.php \"$uri\" \"$secret\" \"$nonce\"`; #"
+    my $sig =  hmac_sha512_hex($uri, $secret);
     return $sig;
 }
 
