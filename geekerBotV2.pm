@@ -279,6 +279,22 @@ sub alt_findProfitAndBuy {
     # Find The Preciouseseses
     my $sellProfit = $self->deci($self->deci($totalSellPrice - $totalBuyPrice) );
     my $profitAfterCommission = $self->deci(($totalSellPrice - $totalBuyPrice) - $totalCommission);
+
+    #for faster fills, is the spread at least 75% of our profit?
+    my $ticker = $self->fetchTicker($coin);
+    print_status ("  $row->{coin} - Bid: $ticker->{bid} - Ask: $ticker->{ask} - Last: $ticker->{last}\n");
+    if ($ticker->{ask} - $ticker->{bid} > $sellProfit*.75)
+    {
+	print "++++****++++ YAY!!!  The spread ", $self->deci($ticker->{ask} - $ticker->{bid})," is more than 75% of our profit ++++****++++\n";
+	
+	
+     }
+     else
+     {
+	print "  No No No -- The spread is less than 75% our profit\n";
+	return;
+     }
+	
     print "|-- IF Buy ".$self->deci($howMany)." $coin at ".$self->deci($bidPrice)." For ".$self->deci($totalBuyPrice)." BTC and then\n";
     print "|-- IF Sell ".$self->deci($howMany)." $coin at ".$self->deci($askPrice)." For ".$self->deci($totalSellPrice)." BTC \n";
     print "|-- Profit Before Commission will be: ".$self->deci($sellProfit)." BTC.\n";
