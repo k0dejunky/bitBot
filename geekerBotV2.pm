@@ -62,6 +62,7 @@ sub run {
         $self->{bittrexApiKey} = $self->getApiKey();
         #print Dumper($self);die();        
     }
+	$self->trimPriceHistory(12); # hours
     $self->fetchBalances(); # Once At Beginning and...
     $self->getTotalPayout(); #once At Beginning
 	print "|--- Total Reserved Bitcoin: " .$self{totalPayout}."\n";
@@ -131,6 +132,19 @@ sub run {
         $self->{delayBuyCyclesRemaining}--;
     }
 }
+
+
+sub trimPriceHistory
+{
+	my ($self) = shift;
+	my ($olderThan) = @_;  #in hours
+	my $db = $self->getDb();
+    my $sth = do_sql_cmd($db,qq/delete FROM altCoinPriceHistory 
+							where date <= DATE_SUB( NOW() , INTERVAL $olderThan hours )/);
+	 $db->disconnect();
+}
+
+
 
 sub syncAllAutoTrades {
     # Syncs what we believe with what the Market Exchange Server knows about each autoTrade order.
