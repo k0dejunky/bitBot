@@ -44,8 +44,9 @@ sub new
         delayBuyUntilMoreThan => '0.00062500',
 	payoutPercentage => 0.10,
 	totalPayout => 0,
-	
+	minProfit => 0.00000300
     };
+    
     bless $self, $class;
     print color('bold yellow');
     printSellArt();
@@ -236,8 +237,8 @@ sub findProfitAndBuy {
     print "|-- IF Sell ".$self->deci($howMany)." $coin at ".$self->deci($highPrice)." For ".$self->deci($totalSellPrice)." BTC \n";
     print "|-- Profit Before Commission will be: ".$self->deci($sellProfit)." BTC.\n";
     print "|-- Profit After Commission will be: ".$self->deci($profitAfterCommission)." BTC.\n";
-    if ( $profitAfterCommission >= 0.00000100 ) {
-        print "****** YES! (Actual Profit is Over 100 Satoshis) ******\n";
+    if ( $profitAfterCommission >= $self->{minProfit} ) {
+         print "****** YES! (Actual Profit is Over ".  int ($self->{minProfit} * 100000000) . " Satoshis) ******\n";
         if ( $howMany > 0 && $self->{availableBtc} >= $self->{delayBuyUntilMoreThan} && ( $self->{delayBuyCyclesRemaining} < 1 ) ) {
             print color('bold green');
 	    print "|--- BUYING ".$self->deci($howMany)." OF $coin @ ".$self->deci($bidPrice)." FOR  ".$self->deci($totalBuyPrice). "\n";            
@@ -249,7 +250,7 @@ sub findProfitAndBuy {
             print "|-- Available: $self->{availableBtc} \n|-- Buy Delay Until More Than? --> " . $self->deci($self->{delayBuyUntilMoreThan}) . "\n";
         }
     } else {
-        print "###### NO! NO! NO! (Actual Profit is NOT Over 100 Satoshis) ######\n";
+          print "###### NO! NO! NO! (Actual Profit is NOT Over ".  int($self->{minProfit} * 100000000) ." Satoshis) ######\n";
     }    
     # Well, thats that then...
 }
