@@ -28,8 +28,12 @@ A cleaned up version of the Crypto Trading Automatron Currently Running GeekProj
 - Go get a bittrex account with API key and API secret.</br>
 - Put some bitcoin in it (I started mine with about 0.082 BTC (roughly $30-$40 USD)</br>
 - INSERT into the accounts table a single row, with apiKey and apiSecret</br>
+- On the first run the bot will put the coins you've traded in the past from your balance list on bittrex into the currency table</br>
+- Using a database editor set tradeMe to 1 and priceCheck to 1 in the currency table for the ones you want to trade (if you want the bot to do anything)</br>
+- Beware that USDT cannot be traded by this bot at this time, due to the way the pair has to look, so do not mark it for trade me or price check</br>
 - Now, run the bot again and leave it alone (I use a detached screen session and an output redirect for logging)</br>
-- Check your account BTC balance and it will only go up, should not ever go down (once all sells complete)</br>
+- Keep track of your BTC balance on Bittrex and it may  increase over time (once all sells complete)</br>
+- Sometimes theres a selloff in the alt coin when the bot has a sell order on a alt coin. if you don't wish to wait, for it to come back up (possibly days, if ever) you will have to manually sell it on bittrex and take the loss.
 
 # How to start the bot
 Pass the Database Password for Database 'geekerV2' to ./geekerV2.pl</br>
