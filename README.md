@@ -1,5 +1,5 @@
 # geekerV2
-Geeker By GeekProjexDotCom</br>
+Geeker By k0dejunkyDotCom</br>
 
 CHANGE ALL FLOAT columns in the database to DECIMAL and use 16,8 for the size. This fixes rounding issues with the code.
 
