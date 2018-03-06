@@ -8,7 +8,7 @@ CHANGE ALL FLOAT columns in the database to DECIMAL and use 16,8 for the size. T
 (FEEDS DIRECTLY TO BOT)</br></br>
 
 # What Is GeekerV2?
-A cleaned up version of the Crypto Trading Automatron Currently Running GeekProjex.com</br>
+A cleaned up version of the Crypto Trading Automatron Currently Running k0dejunky.com/bitcoin</br>
 
 # Better Instructions:
 - Install a L.inux A.pache M.ySQL P.HP box (I like Linode.com shells for this) </br>
