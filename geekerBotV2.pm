@@ -13,7 +13,7 @@ use Digest::SHA qw(hmac_sha512_hex);
 use LWP::UserAgent;  
 use JSON;
 print "Running in: $^O\n";
-use Term::ANSIColor; #uncomment the beginngin of the line for linux
+use Term::ANSIColor; #uncomment the beginning of the line for linux
 #use Win32::Console::ANSI # uncomment the beginning of the line for windows
   
 sub new
