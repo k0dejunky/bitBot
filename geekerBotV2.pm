@@ -13,12 +13,9 @@ use Digest::SHA qw(hmac_sha512_hex);
 use LWP::UserAgent;  
 use JSON;
 print "Running in: $^O\n";
-if ($^O =~ /^Win/i)
-{ use Win32::Console::ANSI} #for windows }
-else
-{ use Term::ANSIColor;} #for linux
-
-    
+use Term::ANSIColor; #uncomment the beginngin of the line for linux
+#use Win32::Console::ANSI # uncomment the beginning of the line for windows
+  
 sub new
 {
     my $class = shift;
@@ -26,27 +23,27 @@ sub new
         dbHost => 'localhost',
         dbName => 'geekerV2',
         dbUser => 'geeker',
-        dbPass => shift,        
+        dbPass => shift,
         bittrexApiSecret => '',
         soldArt => '',
         buyArt=> '',
         sellArt=> '',
-        profitArt=> '',        
+        profitArt=> '',
         currentCycle => 0,
-        btcPrice => 0,        
-        availableBtc => 0,        
+        btcPrice => 0,
+        availableBtc => 0,
         delayBuysCyclesLeft => 0,
         coinMetricsTimeRange => 2,
         investPercent => 100,
         retrySellMax => 2,
         retrySells => 0,
         delayBuyCyclesRemaining => 0,
-        delayBuyUntilMoreThan => '0.00062500',
-	payoutPercentage => 0.10,
-	totalPayout => 0,
-	minProfit => 0.00000300
+        delayBuyUntilMoreThan => '0.00100000',
+        reservePercentage => 10,
+        totalPayout => 0,
+	minPurchase => 0.00400000,
+
     };
-    
     bless $self, $class;
     print color('bold yellow');
     printSellArt();
@@ -62,7 +59,6 @@ sub run {
         $self->{bittrexApiKey} = $self->getApiKey();
         #print Dumper($self);die();        
     }
-	$self->trimPriceHistory(12); # hours
     $self->fetchBalances(); # Once At Beginning and...
     $self->getTotalPayout(); #once At Beginning
 	print "|--- Total Reserved Bitcoin: " .$self{totalPayout}."\n";
@@ -133,19 +129,6 @@ sub run {
     }
 }
 
-
-sub trimPriceHistory
-{
-	my ($self) = shift;
-	my ($olderThan) = @_;  #in hours
-	my $db = $self->getDb();
-    my $sth = do_sql_cmd($db,qq/delete FROM altCoinPriceHistory 
-							where date <= DATE_SUB( NOW() , INTERVAL $olderThan hours )/);
-	 $db->disconnect();
-}
-
-
-
 sub syncAllAutoTrades {
     # Syncs what we believe with what the Market Exchange Server knows about each autoTrade order.
     my ($self) = @_;
@@ -185,7 +168,6 @@ sub initDbTables {
     if ( $self->doesTableExist("accounts") == 0 ) {
         print "|-- Table 'accounts' Does Not Exist!\n";
         $self->createAccountsDbTable();
-	$self->createPayoutDbTable(); #amount not to be traded
         die("You MUST insert your account(api details,etc) MANUALLY within Database\n");
     }
     if ( $self->doesTableExist("currencies") == 0 ) {
@@ -251,8 +233,8 @@ sub findProfitAndBuy {
     print "|-- IF Sell ".$self->deci($howMany)." $coin at ".$self->deci($highPrice)." For ".$self->deci($totalSellPrice)." BTC \n";
     print "|-- Profit Before Commission will be: ".$self->deci($sellProfit)." BTC.\n";
     print "|-- Profit After Commission will be: ".$self->deci($profitAfterCommission)." BTC.\n";
-    if ( $profitAfterCommission >= $self->{minProfit} ) {
-         print "****** YES! (Actual Profit is Over ".  int ($self->{minProfit} * 100000000) . " Satoshis) ******\n";
+    if ( $profitAfterCommission >= 0.00000100 ) {
+        print "****** YES! (Actual Profit is Over 100 Satoshis) ******\n";
         if ( $howMany > 0 && $self->{availableBtc} >= $self->{delayBuyUntilMoreThan} && ( $self->{delayBuyCyclesRemaining} < 1 ) ) {
             print color('bold green');
 	    print "|--- BUYING ".$self->deci($howMany)." OF $coin @ ".$self->deci($bidPrice)." FOR  ".$self->deci($totalBuyPrice). "\n";            
@@ -264,7 +246,7 @@ sub findProfitAndBuy {
             print "|-- Available: $self->{availableBtc} \n|-- Buy Delay Until More Than? --> " . $self->deci($self->{delayBuyUntilMoreThan}) . "\n";
         }
     } else {
-          print "###### NO! NO! NO! (Actual Profit is NOT Over ".  int($self->{minProfit} * 100000000) ." Satoshis) ######\n";
+        print "###### NO! NO! NO! (Actual Profit is NOT Over 100 Satoshis) ######\n";
     }    
     # Well, thats that then...
 }
@@ -298,7 +280,7 @@ sub alt_findProfitAndBuy {
 
     #for faster fills, is the spread at least 75% of our profit?
     my $ticker = $self->fetchTicker($coin);
-    print_status ("  $row->{coin} - Bid: $ticker->{bid} - Ask: $ticker->{ask} - Last: $ticker->{last}\n");
+    #print_status ("  $row->{coin} - Bid: $ticker->{bid} - Ask: $ticker->{ask} - Last: $ticker->{last}\n");
     if ($ticker->{ask} - $ticker->{bid} > $sellProfit*.75)
     {
 	print "++++****++++ YAY!!!  The spread ", $self->deci($ticker->{ask} - $ticker->{bid})," is more than 75% of our profit ++++****++++\n";
@@ -339,7 +321,8 @@ sub howManyAfford {
     my $availableBalance = $self->{availableBtc};             
     print "\n|-- Actual Available BTC: ".$self->deci($self->{availableBtc})."\n";
     print "|-- Max Invest Per: " . $self->{investPercent} ."\n";
-    my $randBuyPercent = (int(rand( $self->{investPercent})) + 1) * 0.01;
+    #my $randBuyPercent = (int(rand( $self->{investPercent})) + 1) * 0.01;
+    my $randBuyPercent = 100 * 0.01;
     print "|-- Random Max Trade Amount Is Enabled and Set To ".($randBuyPercent * 100 )."% of Available BTC (Minimum: 0.00062500) )\n";
     $availableBalance = ($randBuyPercent * $self->{availableBtc}); 
     print "|-- Random Max Trade Amount Becomes ".$self->deci($availableBalance)." BTC\n";
@@ -456,7 +439,9 @@ sub placeSellOrder {
                         last;
                     }
                     select(undef,undef,undef,1); # pause 1 seconds
-                }                
+                }
+	    } elsif($json->{message} eq 'INVALID_MARKET'){
+		# do nothing                
             } else {
                 print "|!! Unknown Message Response: $json->{message}\n"; 
                 if ( $json->{message} =~ /API/ || $json->{message} =~ /INVALID_SIGNATURE/ ) {
@@ -924,8 +909,10 @@ sub priceCheck {
     while ( my $row = $sth->fetchrow_hashref() ) {
         print "|-- $row->{coin} - ";
         my $ticker = $self->fetchTicker($row->{coin});
-        print "Bid: $ticker->{bid} - Ask: $ticker->{ask} - Last: $ticker->{last}\n";
-        $self->insertAltCoinPriceHistory($row->{coin},$ticker);
+        if($ticker->{bid} && $ticker->{ask} && $ticker->{last}){
+            print "Bid: $ticker->{bid} - Ask: $ticker->{ask} - Last: $ticker->{last}\n";
+            $self->insertAltCoinPriceHistory($row->{coin},$ticker);
+	}
     }
     print "|-- End priceCheck()\n";
     $sth->finish();
@@ -1149,8 +1136,8 @@ sub fetchBalances {
 		if($a->{Currency} eq "BTC"){
 	                print "|-- $a->{Currency} - Balance: ".$self->deci($a->{Balance})." - Available: ".$self->deci($a->{Available}-$self{totalPayout})." - Pending: ".$self->deci($a->{Pending})." - Reserved: ".$self->deci($reserved+$self{totalPayout})."\n";
         	        #$self->{availableBtc} = $a->{Available};
-                	if(($a->{Available}-$self{totalPayout}) >= 0.00200000){
-                        	$self->{availableBtc} = 0.00200000;
+                	if(($a->{Available}-$self{totalPayout}) >= $self->{minPurchase}){
+                        	$self->{availableBtc} = $self->{minPurchase};
 	                }else{
         	                $self->{availableBtc} = $a->{Available}-$self{totalPayout};
                 	}
@@ -1558,18 +1545,6 @@ sub createAltCoinPriceHistoryDbTable {
     $db->disconnect();
 }
 
-sub createPayoutDbTable
-{
-    #insert into payout (payout, total) values ($payout, $self{totalPayout})"
-    my ($self) =shift;
-    my $db = $self->getDb();
-
-    my $sth = $db->do("CREATE TABLE payout ( payout DECIMAL(16,8), total DECIMAL(16,8))");
-
-    print "|-- Payout Db Table Table Created!\n";
-    $db->disconnect();
-}
-
 sub doesTableExist {
     my ($self,$checkTable) = @_;
     my $db = $self->getDb();
@@ -1673,3 +1648,4 @@ sub logToFile {
 }
 
 1; # Same thing we do everynight, Pinky.
+
